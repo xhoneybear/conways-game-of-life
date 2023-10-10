@@ -23,7 +23,7 @@ This is a feature-complete implementation allowing for designing your own boards
 
 The game autoloads patterns if they are in the same directory in a `patterns` folder. Once loaded, they're present in the pattern selection menu, placeable by clicking on the canvas (clicked cell is the top-left cell of the pattern's bounding box).
 
-### Board design:
+### Board design
 LMB - set cell state to alive
 RMB - set cell state to dead
 Supports dragging for faster designing.
