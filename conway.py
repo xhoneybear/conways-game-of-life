@@ -122,7 +122,7 @@ def reset():
 
 def makeboard():
     global canvas
-    canvas = tk.Canvas(root, width=cell*width-1, height=cell*height-1, bg=bg)
+    canvas = tk.Canvas(root, width=cell*width-1, height=cell*height-1)
     canvas.grid(row=0, column=0, columnspan=10)
     makelines()
     canvas.bind("<Button-1>", lambda event: set_cell_state(1, event.y // cell, event.x // cell))
@@ -132,9 +132,9 @@ def makeboard():
 
 def makelines():
     for y in range(height):
-        lines.add(canvas.create_line(0, y*cell, cell*width, y*cell, fill=grid))
+        lines.add(canvas.create_line(0, y*cell, cell*width, y*cell))
     for x in range(width):
-        lines.add(canvas.create_line(x*cell, 0, x*cell, cell*height, fill=grid))
+        lines.add(canvas.create_line(x*cell, 0, x*cell, cell*height))
 
 def color_cell(x, y, color):
     cells.add((canvas.create_rectangle(x*cell, y*cell, (x+1)*cell, (y+1)*cell, fill=globals()[color], outline=grid), color))
@@ -155,7 +155,7 @@ def refresh_grid():
     reset()
 
 def change_theme(theme):
-    global primary, secondary, trail, bg, lines
+    global primary, secondary, trail, bg, grid
     if theme == "Light":
         primary = "black"
         secondary = "gray40"
@@ -186,6 +186,8 @@ def change_theme(theme):
         secondary = "pink"
         trail = "white"
         bg = "green"
+    
+    grid = "gray10"
 
     update_style()
 
@@ -210,6 +212,9 @@ def change_theme(theme):
 
     for cell in cells:
         canvas.itemconfig(cell[0], fill=globals()[cell[1]])
+    
+    for line in lines:
+        canvas.itemconfig(line, fill=grid)
 
 def update_style():
     global style_frame, style_button, style_slider
@@ -264,23 +269,11 @@ patterns = generate_pattern_list()
 toroid = tk.BooleanVar()
 trails = tk.BooleanVar()
 
-# Themes
-theme = tk.StringVar()
-theme.set("Light")
-themes = ("Light", "Dark", "Orchid", "Explosive", "Aquatic", "Meadow")
-primary = "black"
-secondary = "gray40"
-trail = "gray75"
-bg = "white"
-grid = "gray10"
-
-update_style()
-
 ### Main window
 
 # Menu bar
 menubar = tk.Menu(root)
-root.config(menu=menubar, bg=bg)
+root.config(menu=menubar)
 # TODO: Populate menu with options
 
 # Board
@@ -288,64 +281,72 @@ makeboard()
 
 # Pattern choice
 pattern_menu = tk.OptionMenu(root, pattern, *patterns, command=use_pattern)
-pattern_menu.config(**style_button)
+pattern_menu.config()
 pattern_menu.grid(row=1, column=0)
 
 # Randomize button
-randomize = tk.Button(root, text="Randomize", command=randomize_board, **style_button)
+randomize = tk.Button(root, text="Randomize", command=randomize_board)
 randomize.grid(row=1, column=1)
 
 # Width
-width_frame = tk.LabelFrame(root, text="Width", **style_frame)
+width_frame = tk.LabelFrame(root, text="Width")
 width_frame.grid(row=1, column=3)
 pre_width = tk.IntVar()
 pre_width.set(width)
-width_control = tk.Spinbox(width_frame, from_=10, to=200, width=5, textvariable=pre_width, **style_frame)
+width_control = tk.Spinbox(width_frame, from_=10, to=200, width=5, textvariable=pre_width)
 width_control.pack()
 
 # Height
-height_frame = tk.LabelFrame(root, text="Height", **style_frame)
+height_frame = tk.LabelFrame(root, text="Height")
 height_frame.grid(row=1, column=4)
 pre_height = tk.IntVar()
 pre_height.set(height)
-height_control = tk.Spinbox(height_frame, from_=10, to=200, width=5, textvariable=pre_height, **style_frame)
+height_control = tk.Spinbox(height_frame, from_=10, to=200, width=5, textvariable=pre_height)
 height_control.pack()
 
 # Cell size
-cell_frame = tk.LabelFrame(root, text="Cell size", **style_frame)
+cell_frame = tk.LabelFrame(root, text="Cell size")
 cell_frame.grid(row=1, column=5)
 pre_cell = tk.IntVar()
 pre_cell.set(cell)
-cell_control = tk.Spinbox(cell_frame, from_=1, to=100, width=5, textvariable=pre_cell, **style_frame)
+cell_control = tk.Spinbox(cell_frame, from_=1, to=100, width=5, textvariable=pre_cell)
 cell_control.pack()
 
 # Toroidal board
-toroid_toggle = tk.Checkbutton(root, text="Toroidal", variable=toroid, **style_button)
+toroid_toggle = tk.Checkbutton(root, text="Toroidal", variable=toroid)
 toroid_toggle.grid(row=2, column=2)
 
 # Trails
-trail_toggle = tk.Checkbutton(root, text="Trails", variable=trails, **style_button)
+trail_toggle = tk.Checkbutton(root, text="Trails", variable=trails)
 trail_toggle.grid(row=2, column=3)
 
-# Theme
+# Themes
+themes = ("Light", "Dark", "Orchid", "Explosive", "Aquatic", "Meadow")
+theme = tk.StringVar()
+if not default_theme or default_theme not in themes:
+    default_theme = "Dark"
+theme.set(default_theme)
 theme_menu = tk.OptionMenu(root, theme, *themes, command=change_theme)
-theme_menu.config(**style_button)
+theme_menu.config()
 theme_menu.grid(row=2, column=4)
 
-apply = tk.Button(root, text="Apply", command=refresh_grid, **style_button)
+apply = tk.Button(root, text="Apply", command=refresh_grid)
 apply.grid(row=2, column=5)
 
 # Speed
-speed_frame = tk.LabelFrame(root, text="Speed", **style_frame)
+speed_frame = tk.LabelFrame(root, text="Speed")
 speed_frame.grid(row=2, column=6, columnspan=4, rowspan=2)
 sleep_var = tk.DoubleVar()
-speed_control = tk.Scale(speed_frame, from_=0, to=5, resolution=0.1, orient=tk.HORIZONTAL, variable=time, **style_slider)
+speed_control = tk.Scale(speed_frame, from_=0, to=5, resolution=0.1, orient=tk.HORIZONTAL, variable=time)
 speed_control.pack()
 
 # Game control buttons
-play_button = tk.Button(root, text="Start", command=start, **style_button)
+play_button = tk.Button(root, text="Start", command=start)
 play_button.grid(row=3, column=0)
-reset_button = tk.Button(root, text="Reset", command=reset, **style_button)
+reset_button = tk.Button(root, text="Reset", command=reset)
 reset_button.grid(row=3, column=1)
+
+# Apply theme
+change_theme(default_theme)
 
 tk.mainloop()

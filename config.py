@@ -7,3 +7,7 @@ cell = 10  # size in px
 survive = [2, 3]
 reproduce = [3]
 # TODO: Add gamerule toggles
+
+# Themes
+# Available: "Light", "Dark", "Orchid", "Explosive", "Aquatic", "Meadow"
+default_theme = "Dark"
