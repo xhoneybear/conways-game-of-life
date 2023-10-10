@@ -8,9 +8,9 @@ This is a feature-complete implementation allowing for designing your own boards
 - [x] Support for Life, Plaintext and RLE formats
 - [x] Variable size, bounded/toroidal board (toggleable)
 - [x] Single-generation trails
-- [x] Speed control (will be redesigned)
+- [x] Speed control
 - [x] Theme selection
-- [ ] Support for custom rulesets (base present)
+- [x] Support for custom rulesets (next: changeable in GUI)
 - [ ] Support for SOF and MCell formats
 - [ ] Pattern rotation
 - [ ] Infinite canvas (not planned)

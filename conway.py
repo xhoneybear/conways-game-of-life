@@ -28,7 +28,12 @@ def set_cell_state(state, y, x):
             color_cell(x, y, "bg")
 
 def calculate_neighbors(y, x):
-    if toroid.get() == True:
+    if use_queue:
+        if (x, y) in queue:
+            return
+        queue.add((x, y))
+
+    if toroid.get():
         neighbors = old_board[(y-1) % height, (x-1) % width] + \
                     old_board[(y-1) % height, x] + \
                     old_board[(y-1) % height, (x+1) % width] + \
@@ -55,43 +60,66 @@ def calculate_neighbors(y, x):
                         old_board[y+1, x-1] + \
                         old_board[y+1, x] + \
                         old_board[y+1, x+1]
-    return neighbors
+    # Apply the rules to the current cell
+    if old_board[y, x] == 0 and neighbors in reproduce:
+        board[y, x] = 1
+    elif old_board[y, x] == 1 and neighbors in survive:
+        board[y, x] = 1
 
-def randomize_board():
-    global board
-    reset()
-    board = np.random.randint(2, size=(height, width))
-    for y in range(height):
-        for x in range(width):
-            if board[y, x] == 1:
-                color_cell(x, y, "primary")
+def proximal_calculation(y, x):
+    if toroid.get():
+        calculate_neighbors((y-1) % height, (x-1) % width)
+        calculate_neighbors((y-1) % height, x)
+        calculate_neighbors((y-1) % height, (x+1) % width)
+        calculate_neighbors(y, (x-1) % width)
+        calculate_neighbors(y, x)
+        calculate_neighbors(y, (x+1) % width)
+        calculate_neighbors((y+1) % height, (x-1) % width)
+        calculate_neighbors((y+1) % height, x)
+        calculate_neighbors((y+1) % height, (x+1) % width)
+    else:
+                if y in (0, height-1) or x in (0, width-1):
+                    for h in range(-1, 2):
+                        for w in range(-1, 2):
+                            if h == 0 and w == 0:
+                                continue
+                            if 0 <= y+h < height and 0 <= x+w < width:
+                                calculate_neighbors(y+h, x+w)
+                else:
+                    calculate_neighbors(y-1, x-1)
+                    calculate_neighbors(y-1, x)
+                    calculate_neighbors(y-1, x+1)
+                    calculate_neighbors(y, x-1)
+                    calculate_neighbors(y, x)
+                    calculate_neighbors(y, x+1)
+                    calculate_neighbors(y+1, x-1)
+                    calculate_neighbors(y+1, x)
+                    calculate_neighbors(y+1, x+1)
 
 # Ruleset
 def evolve():
-    global board, old_board
+    global board, old_board, queue
     old_board = board
     board = np.zeros((height, width))
+    queue = set()
     for y in range(height):
         for x in range(width):
-            # Count the number of live neighbors
-            neighbors = calculate_neighbors(y, x)
-            # Apply the rules to the current cell
-            if old_board[y, x] == 0 and neighbors in reproduce:
-                board[y, x] = 1
-            elif old_board[y, x] == 1 and neighbors in survive:
-                board[y, x] = 1
+            if optimize:
+                if old_board[y, x] == 1:
+                    proximal_calculation(y, x)
+            else:
+                # Count the number of live neighbors
+                calculate_neighbors(y, x)
 
 def start():
     global paused
     paused = False
     play_button.config(text="Pause", command=pause)
-    play()
+    play(1)
 
-def play():
-    global gen
+def play(gen):
     if paused == False:
-        gen += 1
-        print(f"Generation {gen}") # TODO: Move to GUI
+        print(f"Generation {gen}", end='\r') # TODO: Move to GUI
         flush_cells()
         evolve()
         for y in range(height):
@@ -103,8 +131,9 @@ def play():
                         color_cell(x, y, "secondary")
                 elif trails.get() == True and old_board[y, x] == 1:
                     color_cell(x, y, "trail")
+        delay = int(maxspeed/time.get())*10
         canvas.update()
-        canvas.after(int(time.get()*1000), play)
+        canvas.after(delay, lambda: play(gen+1))
 
 def pause():
     global paused
@@ -152,7 +181,17 @@ def refresh_grid():
     cell = pre_cell.get()
     canvas.destroy()
     makeboard()
+    change_theme(theme.get())
     reset()
+
+def randomize_board():
+    global board
+    reset()
+    board = np.random.randint(2, size=(height, width))
+    for y in range(height):
+        for x in range(width):
+            if board[y, x] == 1:
+                color_cell(x, y, "primary")
 
 def change_theme(theme):
     global primary, secondary, trail, bg, grid
@@ -330,14 +369,16 @@ theme_menu = tk.OptionMenu(root, theme, *themes, command=change_theme)
 theme_menu.config()
 theme_menu.grid(row=2, column=4)
 
+# Size apply button
 apply = tk.Button(root, text="Apply", command=refresh_grid)
 apply.grid(row=2, column=5)
 
 # Speed
+maxspeed = 100
 speed_frame = tk.LabelFrame(root, text="Speed")
 speed_frame.grid(row=2, column=6, columnspan=4, rowspan=2)
 sleep_var = tk.DoubleVar()
-speed_control = tk.Scale(speed_frame, from_=0, to=5, resolution=0.1, orient=tk.HORIZONTAL, variable=time)
+speed_control = tk.Scale(speed_frame, from_=1, to=maxspeed, resolution=0.1, orient=tk.HORIZONTAL, variable=time)
 speed_control.pack()
 
 # Game control buttons

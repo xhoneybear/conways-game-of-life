@@ -119,4 +119,5 @@ def generate_pattern_list():
     for pattern in directories:
         name, pattern = parse(pattern)
         templates[name] = pattern
+    print()
     return templates
