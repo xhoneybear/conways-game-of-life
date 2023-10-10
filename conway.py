@@ -1,6 +1,6 @@
 import numpy as np
 import tkinter as tk
-from parser import parse, generate_pattern_list
+from parser import generate_pattern_list
 from config import *
 
 def use_pattern(pattern):
@@ -146,9 +146,10 @@ def flush_cells():
     cells = set()
 
 def refresh_grid():
-    global height, width
+    global height, width, cell
     height = pre_height.get()
     width = pre_width.get()
+    cell = pre_cell.get()
     canvas.destroy()
     makeboard()
     reset()
@@ -196,6 +197,8 @@ def change_theme(theme):
     width_control.config(**style_frame)
     height_frame.config(**style_frame)
     height_control.config(**style_frame)
+    cell_frame.config(**style_frame)
+    cell_control.config(**style_frame)
     speed_frame.config(**style_frame)
     speed_control.config(**style_slider)
     toroid_toggle.config(**style_button)
@@ -294,7 +297,7 @@ randomize.grid(row=1, column=1)
 
 # Width
 width_frame = tk.LabelFrame(root, text="Width", **style_frame)
-width_frame.grid(row=2, column=0)
+width_frame.grid(row=1, column=3)
 pre_width = tk.IntVar()
 pre_width.set(width)
 width_control = tk.Spinbox(width_frame, from_=10, to=200, width=5, textvariable=pre_width, **style_frame)
@@ -302,11 +305,19 @@ width_control.pack()
 
 # Height
 height_frame = tk.LabelFrame(root, text="Height", **style_frame)
-height_frame.grid(row=2, column=1)
+height_frame.grid(row=1, column=4)
 pre_height = tk.IntVar()
 pre_height.set(height)
 height_control = tk.Spinbox(height_frame, from_=10, to=200, width=5, textvariable=pre_height, **style_frame)
 height_control.pack()
+
+# Cell size
+cell_frame = tk.LabelFrame(root, text="Cell size", **style_frame)
+cell_frame.grid(row=1, column=5)
+pre_cell = tk.IntVar()
+pre_cell.set(cell)
+cell_control = tk.Spinbox(cell_frame, from_=1, to=100, width=5, textvariable=pre_cell, **style_frame)
+cell_control.pack()
 
 # Toroidal board
 toroid_toggle = tk.Checkbutton(root, text="Toroidal", variable=toroid, **style_button)
