@@ -34,14 +34,10 @@ def calculate_neighbors(y, x):
         queue.add((x, y))
 
     if toroid.get():
-        neighbors = old_board[(y-1) % height, (x-1) % width] + \
-                    old_board[(y-1) % height, x] + \
-                    old_board[(y-1) % height, (x+1) % width] + \
-                    old_board[y, (x-1) % width] + \
-                    old_board[y, (x+1) % width] + \
-                    old_board[(y+1) % height, (x-1) % width] + \
-                    old_board[(y+1) % height, x] + \
-                    old_board[(y+1) % height, (x+1) % width]
+        neighbors = sum(old_board[(y-h) % height, (x-w) % width] \
+                        for h in range(-1, 2) \
+                        for w in range(-1, 2) \
+                        if h != 0 or w != 0)
     else:
         if y in (0, height-1) or x in (0, width-1):
             neighbors = 0
@@ -52,14 +48,10 @@ def calculate_neighbors(y, x):
                     if 0 <= y+h < height and 0 <= x+w < width:
                         neighbors += old_board[(y+h), (x+w)]
         else:
-            neighbors = old_board[y-1, x-1] + \
-                        old_board[y-1, x] + \
-                        old_board[y-1, x+1] + \
-                        old_board[y, x-1] + \
-                        old_board[y, x+1] + \
-                        old_board[y+1, x-1] + \
-                        old_board[y+1, x] + \
-                        old_board[y+1, x+1]
+            neighbors = sum(old_board[y+h, x+w] \
+                            for h in range(-1, 2) \
+                            for w in range(-1, 2) \
+                            if h != 0 or w != 0)
     # Apply the rules to the current cell
     if old_board[y, x] == 0 and neighbors in reproduce:
         board[y, x] = 1
@@ -68,33 +60,14 @@ def calculate_neighbors(y, x):
 
 def proximal_calculation(y, x):
     if toroid.get():
-        calculate_neighbors((y-1) % height, (x-1) % width)
-        calculate_neighbors((y-1) % height, x)
-        calculate_neighbors((y-1) % height, (x+1) % width)
-        calculate_neighbors(y, (x-1) % width)
-        calculate_neighbors(y, x)
-        calculate_neighbors(y, (x+1) % width)
-        calculate_neighbors((y+1) % height, (x-1) % width)
-        calculate_neighbors((y+1) % height, x)
-        calculate_neighbors((y+1) % height, (x+1) % width)
+        for h in range(-1, 2):
+            for w in range(-1, 2):
+                calculate_neighbors((y+h) % height, (x+w) % width)
     else:
-                if y in (0, height-1) or x in (0, width-1):
-                    for h in range(-1, 2):
-                        for w in range(-1, 2):
-                            if h == 0 and w == 0:
-                                continue
-                            if 0 <= y+h < height and 0 <= x+w < width:
-                                calculate_neighbors(y+h, x+w)
-                else:
-                    calculate_neighbors(y-1, x-1)
-                    calculate_neighbors(y-1, x)
-                    calculate_neighbors(y-1, x+1)
-                    calculate_neighbors(y, x-1)
-                    calculate_neighbors(y, x)
-                    calculate_neighbors(y, x+1)
-                    calculate_neighbors(y+1, x-1)
-                    calculate_neighbors(y+1, x)
-                    calculate_neighbors(y+1, x+1)
+        for h in range(-1, 2):
+            for w in range(-1, 2):
+                if 0 <= y+h < height and 0 <= x+w < width:
+                    calculate_neighbors(y+h, x+w)
 
 # Ruleset
 def evolve():
