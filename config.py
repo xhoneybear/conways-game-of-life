@@ -1,7 +1,7 @@
 # Board size
-height = 100
-width = 100
-cell = 10  # size in px
+height = 150
+width = 150
+cell = 5  # size in px
 
 # Rules
 survive = [2, 3]
