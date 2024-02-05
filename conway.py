@@ -75,24 +75,26 @@ def evolve():
     old_board = board
     board = np.zeros((height, width))
     queue = set()
+    # Count the number of live neighbors
     for y in range(height):
         for x in range(width):
             if optimize:
                 if old_board[y, x] == 1:
                     proximal_calculation(y, x)
             else:
-                # Count the number of live neighbors
                 calculate_neighbors(y, x)
 
 def start():
     global paused
     paused = False
     play_button.config(text="Pause", command=pause)
-    play(1)
+    play()
 
-def play(gen):
+def play():
+    global gen
     if paused == False:
-        print(f"Generation {gen}", end='\r') # TODO: Move to GUI
+        gen += 1
+        print(f"Generation {gen}", end='\r')
         flush_cells()
         evolve()
         for y in range(height):
@@ -105,8 +107,9 @@ def play(gen):
                 elif trails.get() == True and old_board[y, x] == 1:
                     color_cell(x, y, "trail")
         delay = int(maxspeed/time.get())*10
+        generation.config(text=f"Generation: {gen}")
         canvas.update()
-        canvas.after(delay, lambda: play(gen+1))
+        canvas.after(delay, play)
 
 def pause():
     global paused
@@ -207,6 +210,7 @@ def change_theme(theme):
     canvas.config(bg=bg)
     pattern_menu.config(**style_button)
     randomize.config(**style_button)
+    generation.config(**style_button)
     width_frame.config(**style_frame)
     width_control.config(**style_frame)
     height_frame.config(**style_frame)
@@ -266,7 +270,7 @@ root.title("Conway's Game of Life")
 board = np.zeros((height, width))
 gen = 0
 time = tk.DoubleVar()
-time.set(0)
+time.set(100)
 paused = False
 cells = set()
 lines = set()
@@ -299,6 +303,10 @@ pattern_menu.grid(row=1, column=0)
 # Randomize button
 randomize = tk.Button(root, text="Randomize", command=randomize_board)
 randomize.grid(row=1, column=1)
+
+# Generation label
+generation = tk.Label(root, text=f"Generation {gen}")
+generation.grid(row=1, column=2)
 
 # Width
 width_frame = tk.LabelFrame(root, text="Width")
