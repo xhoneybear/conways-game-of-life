@@ -1,22 +1,24 @@
+"""Configuration file."""
+
 # Board size
-height = 150
-width = 150
-cell = 5  # size in px
+HEIGHT = 150
+WIDTH = 150
+CELL = 5  # size in px
 
 # Rules
-survive = [2, 3]
-reproduce = [3]
+SURVIVE = [2, 3]
+REPRODUCE = [3]
 # TODO: Add gamerule toggles
 
 # Themes
 # Available: "Light", "Dark", "Orchid", "Explosive", "Aquatic", "Meadow"
-default_theme = "Dark"
+DEFAULT_THEME = "Dark"
 
 # Optimization
 
 # Use proximal neighbor calculation
 # Greatly improves speed on large boards
-optimize = True
+OPTIMIZE = True
 # Use queue to avoid recalculating neighbors
 # Lowers CPU usage, increases RAM usage
-use_queue = True
+USE_QUEUE = True

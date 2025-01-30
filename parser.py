@@ -1,32 +1,53 @@
+"""Pattern parser."""
+
+from glob import glob
 import numpy as np
 from pathlib import Path
-from glob import glob
+
 
 # Extensions
-exts = ("txt", "cells", "rle", "l", "lif", "life" "sof", "mcl")
+exts = ("txt", "cells", "rle", "l", "lif", "life", "sof", "mcl")
 
 def convert_board(char):
+    """
+    Convert character to cell state.
+
+    args:
+        char [str]: character
+    """
     if char in ("O", "*"):
         return 1
-    elif char != ".":
+    if char != ".":
         print(f"WARNING: Invalid character: {char} (ignoring)")
     return 0
 
 def parse_board(pattern):
-        i = 0
-        while i < len(pattern):
-            if pattern[i][0] in ("#", "!"):
-                pattern.pop(i)
-            else:
-                temp = pattern[i]
-                pattern[i] = []
-                for j in range(len(temp)):
-                    pattern[i].append(convert_board(temp[j]))
-                i += 1
-        pattern = np.array(pattern)
-        return pattern
+    """
+    Parse pattern board.
+
+    args:
+        pattern [list]: pattern board
+    """
+    i = 0
+    while i < len(pattern):
+        if pattern[i][0] in ("#", "!"):
+            pattern.pop(i)
+        else:
+            temp = pattern[i]
+            pattern[i] = []
+            for cell in temp:
+                pattern[i].append(convert_board(cell))
+            i += 1
+    pattern = np.array(pattern)
+    return pattern
 
 def parse(directory):
+    """
+    Parse pattern file.
+
+    args:
+        directory [str]: path to pattern file
+    """
     ext = directory.split(".")[-1].lower()
     # Check file extension
     if ext in exts:
@@ -97,7 +118,7 @@ def parse(directory):
                     temp = ""
                 i += 1
         except IndexError:
-            print("Fallback - reached end of file (consider adding an exclamation mark to the pattern file's end)")
+            print("Fallback - reached end of file (no exclamation mark at the end of pattern file)")
     # Parse SOF
     elif ext == "sof":
         pass # TODO: Implement SOF
@@ -111,6 +132,7 @@ def parse(directory):
     return name, pattern
 
 def generate_pattern_list():
+    """Generate list of patterns in the patterns folder."""
     directories = []
     templates = {}
     directory = str(Path(__file__).parent / "patterns/**/*.")
