@@ -8,6 +8,140 @@ from config import *
 
 
 class Conway:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Conway's Game of Life")
+
+        # Engine variables
+        self.board = np.zeros((HEIGHT, WIDTH))
+        self.gen = 0
+        self.time = tk.DoubleVar()
+        self.time.set(100)
+        self.paused = False
+        self.cells = set()
+        self.lines = set()
+
+        # Patterns
+        self.pattern = tk.StringVar()
+        self.pattern.set("None")
+        self.patterns = generate_pattern_list()
+        # TODO: Implement pattern rotation
+
+        # Board properties
+        self.toroid = tk.BooleanVar()
+        self.trails = tk.BooleanVar()
+
+        ### Main window
+
+        # Menu bar
+        self.menubar = tk.Menu(self.root)
+        self.root.config(menu=self.menubar)
+        # TODO: Populate menu with options
+
+        # Board
+        self.makeboard()
+
+        # Pattern choice
+        self.pattern_menu = tk.OptionMenu(
+            self.root,
+            self.pattern,
+            *self.patterns,
+            command=self.use_pattern
+        )
+        self.pattern_menu.config()
+        self.pattern_menu.grid(row=1, column=0)
+
+        # Randomize button
+        self.randomize = tk.Button(self.root, text="Randomize", command=self.randomize_board)
+        self.randomize.grid(row=1, column=1)
+
+        # Generation label
+        self.generation = tk.Label(self.root, text=f"Generation {self.gen}")
+        self.generation.grid(row=1, column=2)
+
+        # Width
+        self.width_frame = tk.LabelFrame(self.root, text="Width")
+        self.width_frame.grid(row=1, column=3)
+        self.pre_width = tk.IntVar()
+        self.pre_width.set(WIDTH)
+        self.width_control = tk.Spinbox(
+            self.width_frame,
+            from_=10, to=200, width=5,
+            textvariable=self.pre_width
+        )
+        self.width_control.pack()
+
+        # Height
+        self.height_frame = tk.LabelFrame(self.root, text="Height")
+        self.height_frame.grid(row=1, column=4)
+        self.pre_height = tk.IntVar()
+        self.pre_height.set(HEIGHT)
+        self.height_control = tk.Spinbox(
+            self.height_frame,
+            from_=10, to=200, width=5,
+            textvariable=self.pre_height
+        )
+        self.height_control.pack()
+
+        # Cell size
+        self.cell_frame = tk.LabelFrame(self.root, text="Cell size")
+        self.cell_frame.grid(row=1, column=5)
+        self.pre_cell = tk.IntVar()
+        self.pre_cell.set(CELL)
+        self.cell_control = tk.Spinbox(
+            self.cell_frame,
+            from_=1, to=100, width=5,
+            textvariable=self.pre_cell
+        )
+        self.cell_control.pack()
+
+        # Toroidal board
+        self.toroid_toggle = tk.Checkbutton(self.root, text="Toroidal", variable=self.toroid)
+        self.toroid_toggle.grid(row=2, column=2)
+
+        # Trails
+        self.trail_toggle = tk.Checkbutton(self.root, text="Trails", variable=self.trails)
+        self.trail_toggle.grid(row=2, column=3)
+
+        # Themes
+        self.themes = ("Light", "Dark", "Orchid", "Explosive", "Aquatic", "Meadow")
+        self.theme = tk.StringVar()
+        self.theme.set(DEFAULT_THEME)
+        self.theme_menu = tk.OptionMenu(
+            self.root,
+            self.theme,
+            *self.themes,
+            command=self.change_theme
+        )
+        self.theme_menu.config()
+        self.theme_menu.grid(row=2, column=4)
+
+        # Size apply button
+        self.apply = tk.Button(self.root, text="Apply", command=self.refresh_grid)
+        self.apply.grid(row=2, column=5)
+
+        # Speed
+        self.maxspeed = 100
+        self.speed_frame = tk.LabelFrame(self.root, text="Speed")
+        self.speed_frame.grid(row=2, column=6, columnspan=4, rowspan=2)
+        self.sleep_var = tk.DoubleVar()
+        self.speed_control = tk.Scale(
+            self.speed_frame, from_=1, to=self.maxspeed,
+            resolution=0.1, orient=tk.HORIZONTAL, variable=self.time
+        )
+        self.speed_control.pack()
+
+        # Game control buttons
+        self.play_button = tk.Button(self.root, text="Start", command=self.start)
+        self.play_button.grid(row=3, column=0)
+        self.reset_button = tk.Button(self.root, text="Reset", command=self.reset)
+        self.reset_button.grid(row=3, column=1)
+
+        # Apply theme
+        self.change_theme(DEFAULT_THEME)
+
+        tk.mainloop()
+
     def use_pattern(self, pattern):
         """
         Bind mouse click to pattern placement.
@@ -29,7 +163,8 @@ class Conway:
             x [int]: x position
             array [np.array]: pattern array
         """
-        self.canvas.bind("<Button-1>", lambda event: self.set_cell_state(1, event.y // CELL, event.x // CELL))
+        self.canvas.bind("<Button-1>",
+            lambda event: self.set_cell_state(1, event.y // CELL, event.x // CELL))
         for row in array:
             for c in row:
                 self.set_cell_state(c, y, x)
@@ -124,56 +259,70 @@ class Conway:
                 else:
                     self.calculate_neighbors(y, x)
 
+    def paint_board(self, y, x):
+        """
+        Paint the cell.
+
+        args:
+            y [int]: y position
+            x [int]: x position
+        """
+        if self.board[y, x] == 1:
+            if self.board[y, x] == self.old_board[y, x]:
+                self.color_cell(x, y, "primary")
+            else:
+                self.color_cell(x, y, "secondary")
+        elif self.trails.get() is True and self.old_board[y, x] == 1:
+            self.color_cell(x, y, "trail")
+
     def start(self):
         """Start the simulation."""
-        self.PAUSED = False
+        self.paused = False
         self.play_button.config(text="Pause", command=self.pause)
         self.play()
 
     def play(self):
         """Play the simulation."""
-        if self.PAUSED is False:
-            self.GEN += 1
-            print(f"Generation {self.GEN}", end='\r')
+        if self.paused is False:
+            self.gen += 1
+            print(f"Generation {self.gen}", end='\r')
             self.flush_cells()
             self.evolve()
             for y in range(HEIGHT):
                 for x in range(WIDTH):
-                    if self.board[y, x] == 1:
-                        if self.board[y, x] == self.old_board[y, x]:
-                            self.color_cell(x, y, "primary")
-                        else:
-                            self.color_cell(x, y, "secondary")
-                    elif self.trails.get() is True and self.old_board[y, x] == 1:
-                        self.color_cell(x, y, "trail")
-            delay = int(self.MAXSPEED/self.time.get())*10
-            self.generation.config(text=f"Generation: {self.GEN}")
+                    self.paint_board(y, x)
+            delay = int(self.maxspeed/self.time.get())*10
+            self.generation.config(text=f"Generation: {self.gen}")
             self.canvas.update()
             self.canvas.after(delay, self.play)
 
     def pause(self):
         """Pause the simulation."""
-        self.PAUSED = True
+        self.paused = True
         self.play_button.config(text="Resume", command=self.start)
 
     def reset(self):
         """Reset the simulation."""
-        self.PAUSED = True
+        self.paused = True
         self.flush_cells()
         self.board = np.zeros((HEIGHT, WIDTH))
         self.cells = set()
         self.play_button.config(text="Start", command=self.start)
-        self.GEN = 0
+        self.gen = 0
 
     def makeboard(self):
         """Create the game board."""
         self.canvas = tk.Canvas(self.root, width=CELL*WIDTH-1, height=CELL*HEIGHT-1)
         self.canvas.grid(row=0, column=0, columnspan=10)
         self.makelines()
-        self.canvas.bind("<Button-1>", lambda event: self.set_cell_state(1, event.y // CELL, event.x // CELL))
-        self.canvas.bind("<B1-Motion>", lambda event: self.set_cell_state(1, event.y // CELL, event.x // CELL))
-        self.canvas.bind("<Button-3>", lambda event: self.set_cell_state(0, event.y // CELL, event.x // CELL))
-        self.canvas.bind("<B3-Motion>", lambda event: self.set_cell_state(0, event.y // CELL, event.x // CELL))
+        self.canvas.bind("<Button-1>",
+            lambda event: self.set_cell_state(1, event.y // CELL, event.x // CELL))
+        self.canvas.bind("<B1-Motion>",
+            lambda event: self.set_cell_state(1, event.y // CELL, event.x // CELL))
+        self.canvas.bind("<Button-3>",
+            lambda event: self.set_cell_state(0, event.y // CELL, event.x // CELL))
+        self.canvas.bind("<B3-Motion>",
+            lambda event: self.set_cell_state(0, event.y // CELL, event.x // CELL))
 
     def makelines(self):
         """Draw the grid lines."""
@@ -260,6 +409,11 @@ class Conway:
             secondary = "pink"
             trail = "white"
             bg = "green"
+        else:
+            primary = "black"
+            secondary = "gray50"
+            trail = "gray75"
+            bg = "gray90"
 
         grid = "gray10"
 
@@ -319,120 +473,5 @@ class Conway:
             'troughcolor': primary,
         }
         style_slider.update(style)
-
-    ### GUI ###
-
-    ## Init
-    def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("Conway's Game of Life")
-
-        # Engine variables
-        self.board = np.zeros((HEIGHT, WIDTH))
-        self.GEN = 0
-        self.time = tk.DoubleVar()
-        self.time.set(100)
-        self.PAUSED = False
-        self.cells = set()
-        self.lines = set()
-
-        # Patterns
-        self.pattern = tk.StringVar()
-        self.pattern.set("None")
-        self.patterns = generate_pattern_list()
-        # TODO: Implement pattern rotation
-
-        # Board properties
-        self.toroid = tk.BooleanVar()
-        self.trails = tk.BooleanVar()
-
-        ### Main window
-
-        # Menu bar
-        self.menubar = tk.Menu(self.root)
-        self.root.config(menu=self.menubar)
-        # TODO: Populate menu with options
-
-        # Board
-        self.makeboard()
-
-        # Pattern choice
-        self.pattern_menu = tk.OptionMenu(self.root, self.pattern, *self.patterns, command=self.use_pattern)
-        self.pattern_menu.config()
-        self.pattern_menu.grid(row=1, column=0)
-
-        # Randomize button
-        self.randomize = tk.Button(self.root, text="Randomize", command=self.randomize_board)
-        self.randomize.grid(row=1, column=1)
-
-        # Generation label
-        self.generation = tk.Label(self.root, text=f"Generation {self.GEN}")
-        self.generation.grid(row=1, column=2)
-
-        # Width
-        self.width_frame = tk.LabelFrame(self.root, text="Width")
-        self.width_frame.grid(row=1, column=3)
-        self.pre_width = tk.IntVar()
-        self.pre_width.set(WIDTH)
-        self.width_control = tk.Spinbox(self.width_frame, from_=10, to=200, width=5, textvariable=self.pre_width)
-        self.width_control.pack()
-
-        # Height
-        self.height_frame = tk.LabelFrame(self.root, text="Height")
-        self.height_frame.grid(row=1, column=4)
-        self.pre_height = tk.IntVar()
-        self.pre_height.set(HEIGHT)
-        self.height_control = tk.Spinbox(self.height_frame, from_=10, to=200, width=5, textvariable=self.pre_height)
-        self.height_control.pack()
-
-        # Cell size
-        self.cell_frame = tk.LabelFrame(self.root, text="Cell size")
-        self.cell_frame.grid(row=1, column=5)
-        self.pre_cell = tk.IntVar()
-        self.pre_cell.set(CELL)
-        self.cell_control = tk.Spinbox(self.cell_frame, from_=1, to=100, width=5, textvariable=self.pre_cell)
-        self.cell_control.pack()
-
-        # Toroidal board
-        self.toroid_toggle = tk.Checkbutton(self.root, text="Toroidal", variable=self.toroid)
-        self.toroid_toggle.grid(row=2, column=2)
-
-        # Trails
-        self.trail_toggle = tk.Checkbutton(self.root, text="Trails", variable=self.trails)
-        self.trail_toggle.grid(row=2, column=3)
-
-        # Themes
-        self.themes = ("Light", "Dark", "Orchid", "Explosive", "Aquatic", "Meadow")
-        self.theme = tk.StringVar()
-        self.theme.set(DEFAULT_THEME)
-        self.theme_menu = tk.OptionMenu(self.root, self.theme, *self.themes, command=self.change_theme)
-        self.theme_menu.config()
-        self.theme_menu.grid(row=2, column=4)
-
-        # Size apply button
-        self.apply = tk.Button(self.root, text="Apply", command=self.refresh_grid)
-        self.apply.grid(row=2, column=5)
-
-        # Speed
-        self.MAXSPEED = 100
-        self.speed_frame = tk.LabelFrame(self.root, text="Speed")
-        self.speed_frame.grid(row=2, column=6, columnspan=4, rowspan=2)
-        self.sleep_var = tk.DoubleVar()
-        self.speed_control = tk.Scale(
-            self.speed_frame, from_=1, to=self.MAXSPEED,
-            resolution=0.1, orient=tk.HORIZONTAL, variable=self.time
-        )
-        self.speed_control.pack()
-
-        # Game control buttons
-        self.play_button = tk.Button(self.root, text="Start", command=self.start)
-        self.play_button.grid(row=3, column=0)
-        self.reset_button = tk.Button(self.root, text="Reset", command=self.reset)
-        self.reset_button.grid(row=3, column=1)
-
-        # Apply theme
-        self.change_theme(DEFAULT_THEME)
-
-        tk.mainloop()
 
 Conway()
